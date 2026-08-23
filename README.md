@@ -84,6 +84,11 @@ Move-Item ".\Logiway-BE\graphhopper\graphhopper-web-11.0.jar" ".\Logiway-BE\grap
 
 Pada Linux atau macOS, gunakan `mv -f` dengan pasangan nama sumber dan tujuan yang sama. Lakukan rename ulang setiap kali menerima file pembaruan. Nama `latest` diperlukan karena instruksi Docker `COPY`, `ENTRYPOINT`, dan konfigurasi GraphHopper menggunakan path statis; Docker tidak memilih file berdasarkan tanggal secara otomatis. Setelah file diganti, jalankan ulang proses build agar artefak baru masuk ke image.
 
+### Model finetuning
+
+Setelah menjalankan script python untuk menjalankan fine tuning. extract indobert-classifier-pungli.zip, lalu pindah kan folder ```./Logiway-Core/Logiway-BE/src\modules/smart-route/ml```
+
+
 Salin konfigurasi environment:
 
 ```powershell
