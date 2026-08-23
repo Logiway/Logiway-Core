@@ -10,4 +10,5 @@ COPY --chown=graphhopper:graphhopper indonesia-latest.osm.pbf ./indonesia-latest
 COPY --chown=graphhopper:graphhopper config-log.yml truck_small.json truck_medium.json truck_large.json ./
 USER graphhopper
 EXPOSE 8989
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10m --retries=3 CMD curl -fsS http://127.0.0.1:8989/info | grep -q 'truck_medium' || exit 1
 ENTRYPOINT ["java", "-Xms2g", "-Xmx4g", "-jar", "graphhopper-web-latest.jar", "server", "config-log.yml"]
