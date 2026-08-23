@@ -15,10 +15,11 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, logg
 
 tf_logging.set_verbosity_error()
 
-MODEL_PATH = os.environ.get(
-    "MODEL_PATH",
-    os.path.join(os.path.dirname(__file__), "..", "..", "indobert-pungli-classifier")
-)
+default_model_dir = os.path.join(os.path.dirname(__file__), "indobert-pungli-classifier")
+if not os.path.exists(default_model_dir):
+    default_model_dir = os.path.join(os.path.dirname(__file__), "..", "..", "indobert-pungli-classifier")
+
+MODEL_PATH = os.environ.get("MODEL_PATH", default_model_dir)
 MODEL_PATH = os.path.abspath(MODEL_PATH)
 
 LABEL_MAP = {
