@@ -1,6 +1,6 @@
-import { LoaderCircle, Route, Truck } from "lucide-react";
-import { useState } from "react";
-import { calculateSmartRoute, searchLocations } from "../api/index.ts";
+import {LoaderCircle, Route, Truck} from "lucide-react";
+import {useState} from "react";
+import {calculateSmartRoute, searchLocations} from "../api/index.ts";
 import {
   ErrorToast,
   LocationField,
@@ -8,9 +8,9 @@ import {
   Select,
   TruckSpecificationsCard,
 } from "../components/index.ts";
-import type { SelectOption } from "../components/index.ts";
-import { DEFAULT_TRUCK, TRUCKS } from "../constants/index.ts";
-import { useLocationAutocomplete, useSmartRoute } from "../hooks/index.ts";
+import type {SelectOption} from "../components/index.ts";
+import {DEFAULT_TRUCK, TRUCKS} from "../constants/index.ts";
+import {useLocationAutocomplete, useSmartRoute} from "../hooks/index.ts";
 import type {
   Coordinates,
   TruckProfile,
@@ -85,9 +85,11 @@ export function App() {
   const [truckProfile, setTruckProfile] = useState<TruckProfile>(
     DEFAULT_TRUCK.profile,
   );
-  const [specifications, setSpecifications] = useState<TruckSpecifications>(() => ({
-    ...DEFAULT_TRUCK.specifications,
-  }));
+  const [specifications, setSpecifications] = useState<TruckSpecifications>(
+    () => ({
+      ...DEFAULT_TRUCK.specifications,
+    }),
+  );
   const [specificationDrafts, setSpecificationDrafts] =
     useState<TruckSpecificationDrafts>(() =>
       createSpecificationDrafts(DEFAULT_TRUCK.specifications),
@@ -100,7 +102,9 @@ export function App() {
   const smartRoute = useSmartRoute(calculateSmartRoute);
   const specificationErrors = validateSpecifications(specificationDrafts);
   const hasSpecificationErrors = Object.keys(specificationErrors).length > 0;
-  const originValidationError = submitted ? validateLocation(origin, "awal") : null;
+  const originValidationError = submitted
+    ? validateLocation(origin, "awal")
+    : null;
   const destinationValidationError = submitted
     ? validateLocation(destination, "tujuan")
     : null;
@@ -123,8 +127,9 @@ export function App() {
   }
 
   function handleTruckProfileChange(profile: TruckProfile) {
-    const truck = TRUCKS.find((option) => option.profile === profile) ?? DEFAULT_TRUCK;
-    const nextSpecifications = { ...truck.specifications };
+    const truck =
+      TRUCKS.find((option) => option.profile === profile) ?? DEFAULT_TRUCK;
+    const nextSpecifications = {...truck.specifications};
     smartRoute.reset();
     setTruckProfile(profile);
     setSpecifications(nextSpecifications);
@@ -137,9 +142,9 @@ export function App() {
     value: number | null,
   ) {
     smartRoute.reset();
-    setSpecificationDrafts((current) => ({ ...current, [field]: draft }));
+    setSpecificationDrafts((current) => ({...current, [field]: draft}));
     if (value !== null && value >= 0.1) {
-      setSpecifications((current) => ({ ...current, [field]: value }));
+      setSpecifications((current) => ({...current, [field]: value}));
     }
   }
 
@@ -173,7 +178,7 @@ export function App() {
           <LocationField
             id="origin"
             label="Lokasi Awal"
-            placeholder="Ketik tempat (misal: Binus Anggrek)..."
+            placeholder="Ketik tempat asal"
             value={origin}
             suggestions={originAutocomplete.suggestions}
             isOpen={originAutocomplete.isOpen}
@@ -199,7 +204,7 @@ export function App() {
           <LocationField
             id="destination"
             label="Lokasi Tujuan"
-            placeholder="Ketik tempat (misal: Priok)..."
+            placeholder="Ketik tempat tujuan"
             value={destination}
             suggestions={destinationAutocomplete.suggestions}
             isOpen={destinationAutocomplete.isOpen}
@@ -278,7 +283,6 @@ export function App() {
             </p>
           )}
         </div>
-
       </aside>
 
       <RouteMap status={smartRoute.status} />
