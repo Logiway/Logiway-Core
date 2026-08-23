@@ -19,3 +19,4 @@ README.md
 **/*.h5
 **/*.pkl
 **/*.joblib
+!src/modules/smart-route/ml/indobert-pungli-classifier/**
