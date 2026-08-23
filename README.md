@@ -28,26 +28,26 @@ Logiway adalah platform perencanaan rute logistik untuk kendaraan niaga di Indon
 
 ## Informasi Peta
 
-| Ikon | Informasi |
-| --- | --- |
-| Truk | Lokasi awal perjalanan |
-| Pin tujuan | Lokasi tujuan |
-| Kapal | Segmen perjalanan menggunakan kapal feri |
-| Pompa bahan bakar | SPBU di sekitar rute |
-| Tempat tidur | Tempat istirahat |
-| Area layanan | Fasilitas layanan perjalanan |
-| Peringatan | Area dengan risiko pungli |
+| Ikon              | Informasi                                |
+| ----------------- | ---------------------------------------- |
+| Truk              | Lokasi awal perjalanan                   |
+| Pin tujuan        | Lokasi tujuan                            |
+| Kapal             | Segmen perjalanan menggunakan kapal feri |
+| Pompa bahan bakar | SPBU di sekitar rute                     |
+| Tempat tidur      | Tempat istirahat                         |
+| Area layanan      | Fasilitas layanan perjalanan             |
+| Peringatan        | Area dengan risiko pungli                |
 
 ## Teknologi
 
-| Bagian | Teknologi |
-| --- | --- |
-| Frontend | React, TypeScript, Vite, Tailwind CSS, Mapcn, MapLibre |
-| Backend | Node.js, TypeScript, Express |
-| Routing | GraphHopper dan OpenStreetMap |
-| Data lokasi | Nominatim dan Overpass |
-| Analisis AI | IndoBERT |
-| Deployment | Docker Compose dan Nginx |
+| Bagian      | Teknologi                                              |
+| ----------- | ------------------------------------------------------ |
+| Frontend    | React, TypeScript, Vite, Tailwind CSS, Mapcn, MapLibre |
+| Backend     | Node.js, TypeScript, Express                           |
+| Routing     | GraphHopper dan OpenStreetMap                          |
+| Data lokasi | Nominatim dan Overpass                                 |
+| Analisis AI | IndoBERT                                               |
+| Deployment  | Docker Compose dan Nginx                               |
 
 ## Struktur Aplikasi
 
@@ -64,11 +64,27 @@ Logiway-Core/
 Pastikan file berikut tersedia di `Logiway-BE/graphhopper`:
 
 ```text
-graphhopper-web-11.0.jar
-indonesia-260821.osm.pbf
+graphhopper-web-latest.jar
+indonesia-latest.osm.pbf
 ```
 
-Salin konfigurasi environment dan isi Gemini API key:
+### Penamaan artefak GraphHopper
+
+Jika file yang diunduh memiliki nama bertanggal atau nama versi, ubah namanya terlebih dahulu ke nama tetap yang digunakan oleh Dockerfile dan konfigurasi GraphHopper. Contoh pembaruan dataset peta:
+
+```powershell
+Move-Item ".\Logiway-BE\graphhopper\indonesia-260823.osm.pbf" ".\Logiway-BE\graphhopper\indonesia-latest.osm.pbf" -Force
+```
+
+Jika nama file JAR juga memiliki versi, ubah namanya dengan cara yang sama:
+
+```powershell
+Move-Item ".\Logiway-BE\graphhopper\graphhopper-web-11.0.jar" ".\Logiway-BE\graphhopper\graphhopper-web-latest.jar" -Force
+```
+
+Pada Linux atau macOS, gunakan `mv -f` dengan pasangan nama sumber dan tujuan yang sama. Lakukan rename ulang setiap kali menerima file pembaruan. Nama `latest` diperlukan karena instruksi Docker `COPY`, `ENTRYPOINT`, dan konfigurasi GraphHopper menggunakan path statis; Docker tidak memilih file berdasarkan tanggal secara otomatis. Setelah file diganti, jalankan ulang proses build agar artefak baru masuk ke image.
+
+Salin konfigurasi environment:
 
 ```powershell
 Copy-Item ".env.example" ".env"
