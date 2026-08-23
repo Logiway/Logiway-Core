@@ -6,12 +6,6 @@ services:
       - "8989"
     volumes:
       - graphhopper-cache:/app/graph-cache
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8989/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 60
-      start_period: 20m
     restart: unless-stopped
     networks:
       - routing
@@ -23,8 +17,8 @@ services:
       context: ./Logiway-BE
     environment:
       PORT: "6767"
-      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
-      GEMINI_TIMEOUT_MS: "${GEMINI_TIMEOUT_MS:-30000}"
+      PYTHON_EXEC: "python3"
+      MODEL_PATH: "/src/infrastructure/ml/indobert-pungli-classifier"
       GRAPHHOPPER_URL: http://graphhopper:8989/route
       GRAPHHOPPER_TIMEOUT_MS: "${GRAPHHOPPER_TIMEOUT_MS:-120000}"
       NOMINATIM_URL: "${NOMINATIM_URL:-https://nominatim.openstreetmap.org/search}"
@@ -35,16 +29,13 @@ services:
     expose:
       - "6767"
     depends_on:
-      graphhopper:
-        condition: service_healthy
+      - graphhopper
     restart: unless-stopped
     networks:
       - edge
       - routing
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
 
   frontend:
     build:
@@ -52,8 +43,7 @@ services:
     ports:
       - "${FRONTEND_PORT:-8001}:8080"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     restart: unless-stopped
     networks:
       - edge
@@ -61,23 +51,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-
-  ai-generator:
-    profiles:
-      - tools
-    build:
-      context: ./Logiway-AI
-    command:
-      - --count
-      - "260"
-      - --seed
-      - "2026"
-      - --output
-      - /output/train_data.jsonl
-    volumes:
-      - ./Logiway-AI/data:/output
-    network_mode: none
-    restart: "no"
 
 volumes:
   graphhopper-cache:
