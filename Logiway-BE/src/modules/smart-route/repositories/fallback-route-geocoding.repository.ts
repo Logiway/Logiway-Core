@@ -57,10 +57,10 @@ export class FallbackRouteGeocodingRepository implements RouteGeocodingRepositor
 
     try {
       const geocoding = await this.#primaryRepository.geocodeRoute({ origin, dest });
-      if (!isValidGeocoding(geocoding)) throw new Error("Gemini returned invalid geocoding data");
+      if (!isValidGeocoding(geocoding)) throw new Error("Primary geocoding returned invalid data");
       return geocoding;
     } catch (error: unknown) {
-      this.#logger.warn("Route geocoding fallback activated", { provider: "gemini", error: errorMessage(error) });
+      this.#logger.warn("Route geocoding fallback activated", { provider: "primary", error: errorMessage(error) });
     }
 
     let coordinates;
