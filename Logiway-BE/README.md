@@ -1,15 +1,23 @@
 # Logiway Backend
 
-Node 22, TypeScript, Express 5, ES module API for Gemini-assisted logistics routing with Nominatim risk-point geocoding, GraphHopper truck routing, and advisory OpenStreetMap facilities from Overpass.
+Backend Logiway adalah API berbasis Node.js, TypeScript, dan Express untuk:
 
-## Requirements
+- mencari koordinat lokasi melalui OpenStreetMap Nominatim;
+- menghitung rute kendaraan truk melalui GraphHopper;
+- menganalisis risiko di sekitar rute menggunakan IndoBERT lokal melalui Python;
+- mencari fasilitas pendukung rute melalui OpenStreetMap Overpass.
 
-- Node.js 22 or newer
-- npm
-- Gemini API key
-- GraphHopper 11 runtime for live route calculations
+## Persyaratan
 
-## Setup
+- Node.js 22 atau lebih baru;
+- npm;
+- Python 3;
+- dependensi Python `torch` dan `transformers` untuk menjalankan IndoBERT;
+- GraphHopper 11 untuk menghitung rute.
+
+## Menyiapkan Backend
+
+Jalankan perintah berikut dari folder `Logiway-BE`:
 
 ```sh
 cp .env.example .env
@@ -18,34 +26,75 @@ npm run build
 npm start
 ```
 
-`GEMINI_API_KEY` is required at startup. `GEMINI_TIMEOUT_MS` defaults to `30000`, `GRAPHHOPPER_TIMEOUT_MS` to `120000`, and the shared provider `REQUEST_TIMEOUT_MS` to `15000`. `OVERPASS_URLS` accepts up to three comma-separated HTTPS providers and defaults to `https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter`; the single `OVERPASS_URL` remains supported. `OVERPASS_TIMEOUT_MS` defaults to `12000`. `CORS_ORIGIN` is optional; use a comma-separated list for multiple allowed origins. If omitted, CORS remains permissive for backward compatibility. Same-origin `/api` requests through Nginx do not depend on browser CORS; production cross-origin deployments must configure their actual HTTPS frontend origin.
+Pada Windows PowerShell, perintah penyalinan environment dapat ditulis sebagai berikut:
 
-## Scripts
+```powershell
+Copy-Item .env.example .env
+```
+
+File `.env` bersifat opsional karena backend memiliki nilai bawaan untuk sebagian besar pengaturan. Salin `.env.example` jika ingin mengubah pengaturan tersebut.
+
+### Environment variable
+
+| Variabel                 | Fungsi                                               | Nilai bawaan                                              |
+| ------------------------ | ---------------------------------------------------- | --------------------------------------------------------- |
+| `PORT`                   | Port API backend                                     | `6767`                                                    |
+| `CORS_ORIGIN`            | Origin frontend yang diizinkan                       | Tidak dibatasi jika kosong                                |
+| `GRAPHHOPPER_URL`        | URL endpoint GraphHopper                             | `http://graphhopper:8989/route`                           |
+| `GRAPHHOPPER_TIMEOUT_MS` | Batas waktu permintaan GraphHopper                   | `120000`                                                  |
+| `NOMINATIM_URL`          | URL pencarian lokasi Nominatim                       | URL Nominatim OpenStreetMap                               |
+| `OVERPASS_URLS`          | Maksimal tiga URL provider Overpass, dipisahkan koma | Dua provider Overpass publik                              |
+| `OVERPASS_TIMEOUT_MS`    | Batas waktu permintaan Overpass                      | `12000`                                                   |
+| `REQUEST_TIMEOUT_MS`     | Batas waktu provider umum                            | `15000`                                                   |
+| `PYTHON_EXEC`            | Perintah executable Python                           | `python3` atau `py` di Windows                            |
+| `MODEL_PATH`             | Lokasi folder model IndoBERT                         | `./src/modules/smart-route/ml/indobert-pungli-classifier` |
+
+`OVERPASS_URL` tunggal masih dapat digunakan sebagai alternatif lama untuk `OVERPASS_URLS`. Semua URL Overpass harus menggunakan HTTPS.
+
+## Perintah npm
 
 ```sh
-npm run dev
-npm run lint
-npm run typecheck
-npm run build
-npm run check
-npm start
+npm run dev       # Menjalankan backend dalam mode pengembangan
+npm run lint      # Memeriksa aturan lint
+npm run typecheck # Memeriksa tipe TypeScript
+npm run build     # Membuat hasil kompilasi di dist/
+npm run check     # Menjalankan lint, typecheck, dan build
+npm start         # Menjalankan hasil build
 ```
 
 ## API
 
 ### `GET /health`
 
+Memeriksa apakah backend sedang berjalan.
+
 ```json
-{ "status": "ok" }
+{"status": "ok"}
 ```
 
 ### `GET /api/locations?q=Jakarta`
 
-The query is trimmed and must contain 3-200 characters. The endpoint returns at most five normalized Nominatim results as `{ "success": true, "locations": [{ "displayName": "...", "coordinates": [longitude, latitude] }] }`. Provider failures return a generic `502` response.
+Mencari lokasi melalui Nominatim. Parameter `q` dipangkas spasinya dan harus memiliki panjang 3 sampai 200 karakter. Respons berhasil berisi maksimal lima hasil:
+
+```json
+{
+  "success": true,
+  "locations": [
+    {
+      "displayName": "Jakarta, Indonesia",
+      "coordinates": [106.8456, -6.2088]
+    }
+  ]
+}
+```
+
+Urutan koordinat selalu `[longitude, latitude]`. Kegagalan provider dikembalikan sebagai error HTTP `502`.
 
 ### `POST /api/calculate-smart-route`
 
-Request:
+Menghitung rute berdasarkan lokasi awal, tujuan, dan profil truk.
+
+Contoh request:
 
 ```json
 {
@@ -64,11 +113,17 @@ Request:
 }
 ```
 
-Allowed truck profiles are `truck_small`, `truck_medium`, and `truck_large`. Origin and destination are trimmed and must each contain 2-200 characters. `originCoordinates` and `destinationCoordinates` are optional but must be supplied together. Coordinates from selected autocomplete suggestions are used directly, avoiding duplicate route geocoding and allowing routing to continue when Gemini quota and Nominatim are unavailable. When the pair is absent, normal Gemini-to-Nominatim geocoding fallback remains active. `truckSpecifications` is optional; when omitted, the selected profile's defaults are used. Its dimensions, gross weight, and axle load directly constrain which roads GraphHopper may use. Cargo capacity and CBM do not affect road constraints.
+Ketentuan request:
 
-Coordinates are always `[longitude, latitude]`.
+- `origin` dan `dest` wajib memiliki panjang 2 sampai 200 karakter setelah spasi dipangkas;
+- `truckProfile` harus berupa `truck_small`, `truck_medium`, atau `truck_large`;
+- `originCoordinates` dan `destinationCoordinates` bersifat opsional, tetapi harus dikirim berpasangan;
+- jika koordinat tidak dikirim, backend menggunakan Nominatim untuk mencari koordinat lokasi;
+- `truckSpecifications` bersifat opsional. Jika tidak dikirim, spesifikasi bawaan profil truk digunakan;
+- tinggi, lebar, panjang, berat total, dan beban gandar memengaruhi jalan yang dapat dipilih GraphHopper;
+- kapasitas muatan dan volume tidak digunakan sebagai batasan jalan.
 
-Success response contract:
+Respons berhasil memiliki bentuk berikut:
 
 ```json
 {
@@ -78,17 +133,20 @@ Success response contract:
   "route_mode": "standard",
   "is_navigable": true,
   "warning": null,
-  "coordinates": [[106.8456, -6.2088], [107.6191, -6.9175]],
+  "coordinates": [
+    [106.8456, -6.2088],
+    [107.6191, -6.9175]
+  ],
   "geocoding": {
-    "origin": { "name": "Jakarta", "coordinates": [106.8456, -6.2088] },
-    "destination": { "name": "Bandung", "coordinates": [107.6191, -6.9175] }
+    "origin": {"name": "Jakarta", "coordinates": [106.8456, -6.2088]},
+    "destination": {"name": "Bandung", "coordinates": [107.6191, -6.9175]}
   },
   "pungli_points": [],
   "used_pungli_avoidance": false,
   "route_color": "#2563eb",
   "route_details": {
-    "road_environment": [{ "from_index": 0, "to_index": 1, "value": "road" }],
-    "road_class": [{ "from_index": 0, "to_index": 1, "value": "primary" }],
+    "road_environment": [],
+    "road_class": [],
     "toll": [],
     "uses_ferry": false,
     "uses_toll": false
@@ -98,63 +156,70 @@ Success response contract:
 }
 ```
 
-Fallback levels are preserved:
+Mode rute yang tersedia:
 
-1. Risk-aware GraphHopper route using truck constraints plus risk avoidance with CH disabled: `route_mode` is `risk_aware`.
-2. Standard GraphHopper route using truck constraints with CH disabled: `route_mode` is `standard`.
-3. Straight origin-to-destination `[lon,lat]` line: `distance_km` and `duration_minutes` are `null`, `route_mode` is `straight_line_fallback`, `is_navigable` is `false`, and `warning` explains that only a straight line is shown.
+1. `risk_aware`: GraphHopper menggunakan batasan truk dan penalti pada titik risiko yang ditemukan IndoBERT.
+2. `standard`: GraphHopper menggunakan batasan truk tanpa penalti risiko, apabila rute `risk_aware` gagal atau tidak memiliki titik risiko.
+3. `straight_line_fallback`: garis lurus antara lokasi awal dan tujuan jika GraphHopper tidak dapat menghitung rute. Pada mode ini `distance_km` dan `duration_minutes` bernilai `null`, serta `is_navigable` bernilai `false`.
 
-Real GraphHopper routes always return finite numeric distance and duration, `is_navigable: true`, and `warning: null`. `route_details` reports GraphHopper path details; ferry use comes from `road_environment`, while toll use accepts only `hgv` or `all`. For navigable routes, `route_facilities` contains up to 60 nearby OSM fuel, rest-area, and service-area POIs as advisory data. Public Overpass providers may be unavailable, so facilities remain advisory. `route_facilities_status` is `available` after a successful Overpass query (including an empty result), `unavailable` on provider failure, and `not_applicable` for straight-line fallback.
+Titik risiko diklasifikasikan oleh model IndoBERT lokal. Lokasi titik risiko kemudian dicari koordinatnya melalui Nominatim. Jika proses klasifikasi, pencarian koordinat risiko, atau Overpass gagal, proses utama tetap berusaha menghasilkan rute. Fasilitas rute bersifat informasi tambahan dan dapat kosong jika provider Overpass tidak tersedia.
 
-Gemini geocoding falls back to Nominatim when Gemini quota or provider errors occur. If AI quota is exhausted, risk analysis may be unavailable, but the standard GraphHopper route still works. Risk discovery or risk-point geocoding failure does not fail route calculation; routing continues without unavailable penalties. Active `pungli_points` are validated runtime risk points with valid coordinates, location, severity, and note. The local `indobert-pungli-classifier.zip` archive is quarantined and inactive because its package validation and provenance remain unresolved; no model metrics are asserted.
-
-## Architecture
+## Struktur Utama
 
 ```text
 src/
-├── app.ts
-├── index.ts
-├── config/
-│   ├── container.ts
-│   ├── cors.ts
-│   ├── environment.ts
-│   └── logger.ts
-├── errors/
-├── middleware/
+├── app.ts                  # Membuat aplikasi Express dan middleware
+├── main.ts                 # Menjalankan server
+├── config/                 # Pembacaan environment dan logger
+├── errors/                # Tipe error aplikasi
+├── middleware/             # Request ID, logging, dan error handler
 ├── modules/
-│   ├── location/
-│   └── smart-route/
-│       └── repositories/
-├── types/
-└── utils/
+│   ├── location/           # Pencarian lokasi melalui Nominatim
+│   └── smart-route/        # Validasi, risiko, rute, dan fasilitas
+│       ├── ml/             # Script classifier.py dan model IndoBERT
+│       └── repositories/   # Adapter GraphHopper, IndoBERT, dan Overpass
+├── types/                  # Tipe TypeScript
+└── utils/                  # Fungsi utilitas
 ```
 
-Location search and Nominatim access are co-located in `modules/location`. Smart-route validation, orchestration, truck and risk models, and Gemini, GraphHopper, fallback geocoding, and Overpass adapters are co-located in `modules/smart-route`. `config/container.ts` is the dependency-injection composition root, `app.ts` builds the Express middleware and route pipeline, and `index.ts` owns process startup and shutdown.
+Setiap request menerima `X-Request-ID`. ID yang tidak valid atau tidak dikirim akan diganti oleh backend. Log terstruktur mencatat startup, shutdown, penyelesaian request, dan error internal tanpa mencatat body request, cookie, atau header yang sensitif.
 
-Every request receives an `X-Request-ID`. Safe client IDs are retained; invalid or missing IDs are replaced. Error and not-found responses include `requestId`. Request completion, startup, shutdown, and internal errors use one-line structured JSON logs with recursive secret redaction. Request and response bodies, cookies, and headers are not logged.
+## Menjalankan dengan Docker
 
-## Docker
+### Image backend API
 
-Build the API image:
+Jalankan dari folder `Logiway-BE`:
 
 ```sh
 docker build -t logiway-backend .
+docker run --rm -p 6767:6767 logiway-backend
 ```
 
-The production image installs lockfile-pinned production dependencies, runs as the non-root `node` user, and exposes a `/health` health check.
+Image backend menggunakan Node.js 22, menjalankan proses sebagai user non-root, memasang Python beserta dependensi CPU `torch` dan `transformers`, serta menyediakan health check pada `/health`.
 
-### GraphHopper artifacts
+### Artefak GraphHopper
 
-The `graphhopper/` directory preserves the old GraphHopper 11 configuration and truck profiles. Before building that image, place these untracked runtime artifacts directly in `graphhopper/`:
+Sebelum menjalankan Compose, letakkan dua file berikut secara langsung di folder `Logiway-BE/graphhopper`:
 
-- `graphhopper-web-11.0.jar`
-- `indonesia-260821.osm.pbf`
+- `graphhopper-web-latest.jar`
+- `indonesia-latest.osm.pbf`
 
-They are intentionally ignored because they are large upstream artifacts. The PBF filename must match `graphhopper/config-log.yml`. Generated `graphhopper/graph-cache/` is also ignored and should be mounted as a volume.
+Jika file baru memiliki nama bertanggal atau berversi, ubah namanya ke nama tetap tersebut sebelum build. Contoh Windows PowerShell:
+
+```powershell
+Move-Item ".\graphhopper\indonesia-260823.osm.pbf" ".\graphhopper\indonesia-latest.osm.pbf" -Force
+Move-Item ".\graphhopper\graphhopper-web-11.0.jar" ".\graphhopper\graphhopper-web-latest.jar" -Force
+```
+
+Di Linux atau macOS, gunakan `mv -f` dengan nama sumber dan tujuan yang sama. Nama tetap diperlukan karena instruksi Docker `COPY`, `ENTRYPOINT`, dan `config-log.yml` menggunakan path statis. Docker tidak memilih file terbaru berdasarkan tanggal atau versi secara otomatis. Setelah mengganti salah satu file, build ulang image GraphHopper agar file baru masuk ke image.
+
+File tersebut diabaikan Git karena ukurannya besar. Folder `graph-cache/` juga merupakan hasil generate GraphHopper dan digunakan sebagai volume Docker.
+
+Jalankan service backend dan GraphHopper dengan Compose:
 
 ```sh
 docker compose build
 docker compose up
 ```
 
-The API container uses `http://graphhopper:8989/route` with a `120000` ms timeout by default. The root frontend Nginx keeps a 10-second API proxy connect timeout and 150-second read/send timeouts. Do not bake `.env` or secrets into either image.
+API memakai GraphHopper pada `http://graphhopper:8989/route` dengan batas waktu bawaan `120000` ms. Jangan memasukkan file `.env` atau secret ke dalam image Docker.
