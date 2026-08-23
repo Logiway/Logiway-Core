@@ -27,7 +27,7 @@ export const TRUCKS: readonly Truck[] = [
   },
   {
     id: "truck_large",
-    name: "Heavy Duty / Articulated (Tronton / Trailer)",
+    name: "Truk Besar (Tronton / Trailer)",
     profile: "truck_large",
     specifications: {
       maxCapacityTon: 25,
