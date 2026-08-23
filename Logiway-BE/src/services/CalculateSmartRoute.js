@@ -167,30 +167,7 @@ export class CalculateSmartRoute {
     if (!route.isNavigable) {
       return { status: "not_applicable", facilities: [] };
     }
-
-    try {
-      const facilities = await this.routeFacilityRepository.findAlongRoute(
-        route.coordinates,
-      );
-      return {
-        status: "available",
-        facilities: facilities.map((facility) => ({
-          id: facility.id,
-          facility_type: facility.facilityType,
-          name: facility.name,
-          coordinates: facility.coordinates,
-          opening_hours: facility.openingHours,
-          hgv_access: facility.hgvAccess,
-          source: facility.source,
-        })),
-      };
-    } catch (error) {
-      this.logger.warn("Route facilities unavailable", {
-        provider: "overpass",
-        error: error.message,
-      });
-      return { status: "unavailable", facilities: [] };
-    }
+    return { status: "disabled", facilities: [] };
   }
 
   async #calculateRoute({ points, profile, vehicleModel, riskModel }) {
