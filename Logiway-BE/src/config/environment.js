@@ -65,5 +65,7 @@ export function loadConfig(environment = process.env) {
       environment.REQUEST_TIMEOUT_MS,
       DEFAULT_TIMEOUT_MS,
     ),
+    pythonExec: environment.PYTHON_EXEC?.trim() || undefined,
+    modelPath: environment.MODEL_PATH?.trim() || undefined,
   };
 }
