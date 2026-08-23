@@ -86,7 +86,7 @@ Pada Linux atau macOS, gunakan `mv -f` dengan pasangan nama sumber dan tujuan ya
 
 ### Model finetuning
 
-Setelah menjalankan script python untuk menjalankan fine tuning. extract indobert-pungli-classifier.zip, lalu pindah kan folder ```./Logiway-Core/Logiway-BE/src\modules/smart-route/ml```
+Setelah menjalankan script python untuk menjalankan fine tuning. extract indobert-pungli-classifier.zip, lalu pindah kan folder ```./Logiway-Core/Logiway-BE/src/modules/smart-route/ml```
 
 
 Salin konfigurasi environment:
