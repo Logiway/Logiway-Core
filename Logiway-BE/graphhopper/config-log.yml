@@ -1,7 +1,7 @@
 graphhopper:
   import.osm.ignored_highways: footway,cycleway,path,pedestrian,steps,bridleway
   graph.encoded_values: max_height, max_weight, max_axle_load, max_width, max_length, hgv, road_class, road_environment, surface, hazmat, toll
-  datareader.file: indonesia-260821.osm.pbf
+  datareader.file: indonesia-latest.osm.pbf
   graph.dataaccess: RAM_STORE
   graph.location: graph-cache
 
