@@ -1,0 +1,331 @@
+openapi: 3.1.0
+info:
+  title: Logiway Core API
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /locations:
+    get:
+      operationId: searchLocations
+      summary: Mencari saran lokasi di Indonesia
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 200
+      responses:
+        "200":
+          description: Saran lokasi berhasil ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocationSearchResponse"
+        "400":
+          description: Query tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Provider pencarian lokasi tidak tersedia
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /calculate-smart-route:
+    post:
+      operationId: calculateSmartRoute
+      summary: Menghitung rute logistik berdasarkan profil truk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalculateSmartRouteRequest"
+      responses:
+        "200":
+          description: Rute atau fallback non-navigable berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmartRouteResponse"
+        "400":
+          description: Input tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Kesalahan internal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    Coordinate:
+      type: array
+      prefixItems:
+        - type: number
+          minimum: -180
+          maximum: 180
+        - type: number
+          minimum: -90
+          maximum: 90
+      minItems: 2
+      maxItems: 2
+    LocationSuggestion:
+      type: object
+      additionalProperties: false
+      required: [displayName, coordinates]
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 500
+        coordinates:
+          $ref: "#/components/schemas/Coordinate"
+    LocationSearchResponse:
+      type: object
+      additionalProperties: false
+      required: [success, locations]
+      properties:
+        success:
+          const: true
+        locations:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/LocationSuggestion"
+    TruckProfile:
+      type: string
+      enum: [truck_small, truck_medium, truck_large]
+    TruckRoutingSpecifications:
+      type: object
+      additionalProperties: false
+      required: [maxHeightM, maxWidthM, maxLengthM]
+      properties:
+        maxHeightM:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 12.6
+        maxWidthM:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 12.6
+        maxLengthM:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 12.6
+        grossWeightTon:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 51
+        maxAxleLoadTon:
+          type: number
+          minimum: 0.5
+          maximum: 63
+    CalculateSmartRouteRequest:
+      type: object
+      description: Koordinat dari saran lokasi terpilih dapat dikirim berpasangan untuk menghindari geocoding ulang.
+      additionalProperties: false
+      required: [origin, dest, truckProfile]
+      dependentRequired:
+        originCoordinates: [destinationCoordinates]
+        destinationCoordinates: [originCoordinates]
+      properties:
+        origin:
+          type: string
+          minLength: 2
+          maxLength: 200
+        dest:
+          type: string
+          minLength: 2
+          maxLength: 200
+        originCoordinates:
+          $ref: "#/components/schemas/Coordinate"
+        destinationCoordinates:
+          $ref: "#/components/schemas/Coordinate"
+        truckProfile:
+          $ref: "#/components/schemas/TruckProfile"
+        truckSpecifications:
+          $ref: "#/components/schemas/TruckRoutingSpecifications"
+    GeocodedLocation:
+      type: object
+      additionalProperties: false
+      required: [name, coordinates]
+      properties:
+        name:
+          type: string
+        coordinates:
+          $ref: "#/components/schemas/Coordinate"
+    RiskPoint:
+      type: object
+      additionalProperties: false
+      required: [location_name, severity, note, coordinates]
+      properties:
+        location_name:
+          type: string
+          minLength: 2
+          maxLength: 160
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 10
+        note:
+          type: string
+          maxLength: 500
+        coordinates:
+          $ref: "#/components/schemas/Coordinate"
+    RouteDetailSegment:
+      type: object
+      description: Segment indices address the route coordinate array; from_index must be less than to_index.
+      additionalProperties: false
+      required: [from_index, to_index, value]
+      properties:
+        from_index:
+          type: integer
+          minimum: 0
+        to_index:
+          type: integer
+          minimum: 1
+        value:
+          type: [string, "null"]
+    RouteDetails:
+      type: object
+      additionalProperties: false
+      required: [road_environment, road_class, toll, uses_ferry, uses_toll]
+      properties:
+        road_environment:
+          type: array
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/RouteDetailSegment"
+        road_class:
+          type: array
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/RouteDetailSegment"
+        toll:
+          type: array
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/RouteDetailSegment"
+        uses_ferry:
+          type: boolean
+        uses_toll:
+          type: boolean
+    RouteFacility:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - facility_type
+        - name
+        - coordinates
+        - opening_hours
+        - hgv_access
+        - source
+      properties:
+        id:
+          type: string
+          minLength: 1
+        facility_type:
+          type: string
+          enum: [fuel, rest_area, service_area]
+        name:
+          type: [string, "null"]
+          maxLength: 160
+        coordinates:
+          $ref: "#/components/schemas/Coordinate"
+        opening_hours:
+          type: [string, "null"]
+          maxLength: 160
+        hgv_access:
+          type: string
+          enum: [yes, no, designated, unknown]
+        source:
+          const: openstreetmap
+    SmartRouteResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - success
+        - distance_km
+        - duration_minutes
+        - route_mode
+        - is_navigable
+        - warning
+        - coordinates
+        - geocoding
+        - pungli_points
+        - used_pungli_avoidance
+        - route_color
+        - route_details
+        - route_facilities_status
+        - route_facilities
+      properties:
+        success:
+          const: true
+        distance_km:
+          type: [number, "null"]
+          minimum: 0
+        duration_minutes:
+          type: [integer, "null"]
+          minimum: 0
+        route_mode:
+          type: string
+          enum: [risk_aware, standard, straight_line_fallback]
+        is_navigable:
+          type: boolean
+        warning:
+          type: [string, "null"]
+        coordinates:
+          type: array
+          minItems: 2
+          items:
+            $ref: "#/components/schemas/Coordinate"
+        geocoding:
+          type: object
+          additionalProperties: false
+          required: [origin, destination]
+          properties:
+            origin:
+              $ref: "#/components/schemas/GeocodedLocation"
+            destination:
+              $ref: "#/components/schemas/GeocodedLocation"
+        pungli_points:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/RiskPoint"
+        used_pungli_avoidance:
+          type: boolean
+        route_color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        route_details:
+          anyOf:
+            - $ref: "#/components/schemas/RouteDetails"
+            - type: "null"
+        route_facilities_status:
+          type: string
+          enum: [available, unavailable, not_applicable]
+        route_facilities:
+          type: array
+          maxItems: 60
+          items:
+            $ref: "#/components/schemas/RouteFacility"
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [success, error]
+      properties:
+        success:
+          const: false
+        error:
+          type: string

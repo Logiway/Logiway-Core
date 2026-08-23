@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "regulation_catalog.schema.json",
+  "title": "Logiway AI Regulation Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["catalog_version", "records"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "catalog_version": {"const": "1.0"},
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "jurisdiction",
+          "status",
+          "source_reference",
+          "operational"
+        ],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "title": {"type": "string", "minLength": 1},
+          "jurisdiction": {"type": "string", "minLength": 1},
+          "status": {"enum": ["verified", "pending"]},
+          "source_reference": {"type": ["string", "null"]},
+          "operational": {"type": "boolean"}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"status": {"const": "pending"}}},
+            "then": {
+              "properties": {
+                "operational": {"const": false},
+                "source_reference": {"type": "null"}
+              }
+            }
+          },
+          {
+            "if": {"properties": {"status": {"const": "verified"}}},
+            "then": {
+              "properties": {
+                "source_reference": {"type": "string", "minLength": 1}
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

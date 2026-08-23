@@ -1,0 +1,17 @@
+{
+  "name": "logiway-core",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm ci --prefix Logiway-FE && npm ci --prefix Logiway-BE",
+    "check:fe": "npm run lint --prefix Logiway-FE && npm run typecheck --prefix Logiway-FE && npm run build --prefix Logiway-FE",
+    "check:be": "npm run lint --prefix Logiway-BE && npm run check:start --prefix Logiway-BE",
+    "check": "npm run check:fe && npm run check:be",
+    "docker:config": "docker compose config --quiet",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -1,0 +1,7 @@
+services:
+  backend:
+    ports:
+      - "127.0.0.1:6767:6767"
+  graphhopper:
+    ports:
+      - "127.0.0.1:8989:8989"

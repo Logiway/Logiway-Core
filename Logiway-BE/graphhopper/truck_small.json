@@ -1,0 +1,18 @@
+{
+  "speed": [
+    { "if": "true", "limit_to": 70 },
+    { "if": "road_class == TRUNK || road_class == PRIMARY", "limit_to": 60 },
+    { "if": "road_class == SECONDARY || road_class == TERTIARY", "limit_to": 40 },
+    { "if": "surface == UNPAVED || surface == GRAVEL || surface == DIRT", "limit_to": 20 }
+  ],
+  "priority": [
+    { "if": "hgv == NO", "multiply_by": 0.0 },
+    { "if": "road_class == MOTORWAY || toll == HGV", "multiply_by": 1.5 },
+    { "if": "road_class == TRUNK || road_class == PRIMARY", "multiply_by": 1.2 },
+    { "if": "road_class == SECONDARY", "multiply_by": 0.8 },
+    { "if": "road_class == TERTIARY", "multiply_by": 0.5 },
+    { "if": "road_class == RESIDENTIAL || road_class == LIVING_STREET || road_class == SERVICE", "multiply_by": 0.1 },
+    { "if": "surface == UNPAVED || surface == GRAVEL || surface == DIRT || surface == GROUND", "multiply_by": 0.2 }
+  ],
+  "areas": {}
+}

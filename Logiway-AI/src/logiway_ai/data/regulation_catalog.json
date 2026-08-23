@@ -1,0 +1,14 @@
+{
+  "$schema": "./regulation_catalog.schema.json",
+  "catalog_version": "1.0",
+  "records": [
+    {
+      "id": "pending-source-placeholder",
+      "title": "Placeholder sumber regulasi yang belum tersedia",
+      "jurisdiction": "Indonesia",
+      "status": "pending",
+      "source_reference": null,
+      "operational": false
+    }
+  ]
+}

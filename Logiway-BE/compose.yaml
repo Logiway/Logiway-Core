@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      context: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GRAPHHOPPER_URL: http://graphhopper:8989/route
+      GRAPHHOPPER_TIMEOUT_MS: ${GRAPHHOPPER_TIMEOUT_MS:-120000}
+      OVERPASS_URLS: "${OVERPASS_URLS:-${OVERPASS_URL:-https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter}}"
+      OVERPASS_TIMEOUT_MS: ${OVERPASS_TIMEOUT_MS:-12000}
+    ports:
+      - "127.0.0.1:6767:6767"
+    depends_on:
+      - graphhopper
+    restart: unless-stopped
+
+  graphhopper:
+    build:
+      context: ./graphhopper
+    ports:
+      - "127.0.0.1:8989:8989"
+    volumes:
+      - graphhopper-cache:/app/graph-cache
+    restart: unless-stopped
+
+volumes:
+  graphhopper-cache:
