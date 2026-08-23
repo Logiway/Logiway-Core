@@ -1,6 +1,6 @@
 # Logiway Backend
 
-Node 22, Express 5, ES module API for Gemini-assisted logistics routing with Nominatim risk-point geocoding, GraphHopper truck routing, and advisory OpenStreetMap facilities from Overpass.
+Node 22, TypeScript, Express 5, ES module API for Gemini-assisted logistics routing with Nominatim risk-point geocoding, GraphHopper truck routing, and advisory OpenStreetMap facilities from Overpass.
 
 ## Requirements
 
@@ -14,6 +14,7 @@ Node 22, Express 5, ES module API for Gemini-assisted logistics routing with Nom
 ```sh
 cp .env.example .env
 npm ci
+npm run build
 npm start
 ```
 
@@ -22,9 +23,12 @@ npm start
 ## Scripts
 
 ```sh
+npm run dev
 npm run lint
+npm run typecheck
+npm run build
 npm run check
-npm run check:start
+npm start
 ```
 
 ## API
@@ -106,15 +110,28 @@ Gemini geocoding falls back to Nominatim when Gemini quota or provider errors oc
 
 ## Architecture
 
-- `src/config`: environment and logging
-- `src/domain`: coordinates, truck profiles, and pure routing-risk logic
-- `src/repositories`: external-service contracts
-- `src/infrastructure/repositories`: Gemini, Nominatim, GraphHopper, and Overpass adapters
-- `src/services`: smart-route use case and fallback policy
-- `src/controllers`, `src/routes`, `src/middleware`: HTTP boundary
-- `src/container.js`: dependency-injection composition root
-- `src/app.js`: Express app factory
-- `src/server.js`: process entry point
+```text
+src/
+├── app.ts
+├── index.ts
+├── config/
+│   ├── container.ts
+│   ├── cors.ts
+│   ├── environment.ts
+│   └── logger.ts
+├── errors/
+├── middleware/
+├── modules/
+│   ├── location/
+│   └── smart-route/
+│       └── repositories/
+├── types/
+└── utils/
+```
+
+Location search and Nominatim access are co-located in `modules/location`. Smart-route validation, orchestration, truck and risk models, and Gemini, GraphHopper, fallback geocoding, and Overpass adapters are co-located in `modules/smart-route`. `config/container.ts` is the dependency-injection composition root, `app.ts` builds the Express middleware and route pipeline, and `index.ts` owns process startup and shutdown.
+
+Every request receives an `X-Request-ID`. Safe client IDs are retained; invalid or missing IDs are replaced. Error and not-found responses include `requestId`. Request completion, startup, shutdown, and internal errors use one-line structured JSON logs with recursive secret redaction. Request and response bodies, cookies, and headers are not logged.
 
 ## Docker
 

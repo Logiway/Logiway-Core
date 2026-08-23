@@ -43,7 +43,7 @@ Logiway adalah platform perencanaan rute logistik untuk kendaraan niaga di Indon
 | Bagian | Teknologi |
 | --- | --- |
 | Frontend | React, TypeScript, Vite, Tailwind CSS, Mapcn, MapLibre |
-| Backend | Node.js, Express |
+| Backend | Node.js, TypeScript, Express |
 | Routing | GraphHopper dan OpenStreetMap |
 | Data lokasi | Nominatim dan Overpass |
 | Analisis AI | IndoBERT |

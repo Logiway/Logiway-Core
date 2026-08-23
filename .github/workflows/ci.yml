@@ -36,7 +36,8 @@ jobs:
           cache-dependency-path: Logiway-BE/package-lock.json
       - run: npm ci
       - run: npm run lint
-      - run: npm run check:start
+      - run: npm run typecheck
+      - run: npm run build
 
   ai:
     runs-on: ubuntu-latest
